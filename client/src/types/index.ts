@@ -64,3 +64,31 @@ export interface Template {
   backgroundColor: string;
   layers?: Layer[];
 }
+
+// 白板快照文件（可下载/导入）
+export const SNAPSHOT_FILE_TYPE = 'whiteboard-snapshot';
+export const SNAPSHOT_FORMAT_VERSION = 1;
+
+export interface SnapshotCounts {
+  stickyNotes: number;
+  texts: number;
+  paths: number;
+  shapes: number;
+  images: number;
+  total: number;
+}
+
+export interface BoardSnapshot {
+  fileType: string;
+  formatVersion: number;
+  appVersion: string;
+  exportedAt: string;
+  board: {
+    name: string;
+    width: number;
+    height: number;
+    backgroundColor: string;
+    layers: Layer[];
+  };
+  counts: SnapshotCounts;
+}

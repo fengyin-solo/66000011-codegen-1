@@ -1,4 +1,4 @@
-import { Board, Template } from '../types';
+import { Board, BoardSnapshot, Template } from '../types';
 
 const API_BASE_URL = '/api/boards';
 const TEMPLATE_API_URL = '/api/templates';
@@ -23,7 +23,14 @@ export const boardApi = {
     return response.json();
   },
 
-  async createBoard(data: { name: string; ownerId: string; width?: number; height?: number }): Promise<Board | null> {
+  async createBoard(data: {
+    name: string;
+    ownerId: string;
+    width?: number;
+    height?: number;
+    backgroundColor?: string;
+    layers?: Board['layers'];
+  }): Promise<Board | null> {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,6 +41,19 @@ export const boardApi = {
       throw new Error(errorData.error || 'Failed to create board');
     }
     return response.json();
+  },
+
+  // 从白板快照导入：始终创建一份新画板，不会覆盖任何现有画板
+  async createBoardFromSnapshot(snapshot: BoardSnapshot, ownerId: string): Promise<Board | null> {
+    const { board } = snapshot;
+    return this.createBoard({
+      name: board.name,
+      ownerId,
+      width: board.width,
+      height: board.height,
+      backgroundColor: board.backgroundColor,
+      layers: board.layers,
+    });
   },
 
   async deleteBoard(boardId: string): Promise<boolean> {
@@ -114,61 +134,6 @@ export const boardApi = {
       updatedAt: now,
     };
   },
-};
-
-const mockTemplates: Template[] = [
-  {
-    _id: 'template-meeting',
-    name: '会议纪要',
-    description: '快速记录会议要点、待办事项和决议',
-    category: 'meeting',
-    thumbnail: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    icon: '📝',
-    width: 3000,
-    height: 2000,
-    backgroundColor: '#f8f9fa',
-  },
-  {
-    _id: 'template-workflow',
-    name: '流程梳理',
-    description: '可视化梳理业务流程、工作流和决策路径',
-    category: 'workflow',
-    thumbnail: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    icon: '🔄',
-    width: 3500,
-    height: 2200,
-    backgroundColor: '#f0f9ff',
-  },
-  {
-    _id: 'template-weekly',
-    name: '周计划',
-    description: '规划一周工作，跟踪每日任务和重要事项',
-    category: 'productivity',
-    thumbnail: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    icon: '📅',
-    width: 3200,
-    height: 2000,
-    backgroundColor: '#f0fdf4',
-  },
-];
-
-const createMockBoardFromTemplate = (
-  template: Template,
-  data: { name: string; ownerId: string }
-): Board => {
-  const now = new Date().toISOString();
-  return {
-    _id: `board-${Date.now()}`,
-    name: data.name || template.name,
-    ownerId: data.ownerId,
-    collaborators: [],
-    layers: template.layers || [{ name: '图层 1', visible: true, locked: false, order: 0, elements: [] }],
-    width: template.width,
-    height: template.height,
-    backgroundColor: template.backgroundColor,
-    createdAt: now,
-    updatedAt: now,
-  };
 };
 
 export const templateApi = {

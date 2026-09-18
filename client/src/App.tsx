@@ -6,13 +6,14 @@ import { CursorOverlay } from './components/CursorOverlay';
 import { Dashboard } from './components/Dashboard';
 import { useWhiteboardStore } from './store/whiteboard';
 import { socketService } from './services/socket';
+import { downloadSnapshot } from './services/snapshot';
 import { Board, BoardElement, CursorPosition, Layer, CanvasTransform, ViewType } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const {
-    setBoard, updateCursor, removeCursor, setCursors, username
+    setBoard, updateCursor, removeCursor, setCursors, setActiveLayerIndex, username
   } = useWhiteboardStore();
 
   useEffect(() => {
@@ -64,11 +65,25 @@ const App: React.FC = () => {
   const handleBoardSelect = (boardItem: Board) => {
     setActiveBoard(boardItem);
     setCurrentView('board');
+    // 切换画板后复位活动图层，避免索引沿用上一个画板
+    setActiveLayerIndex(0);
   };
 
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
     setActiveBoard(null);
+  };
+
+  const handleExportSnapshot = () => {
+    const { board } = useWhiteboardStore.getState();
+    if (!board) return;
+    const elementCount = board.layers.reduce((sum, layer) => sum + layer.elements.length, 0);
+    if (elementCount === 0) {
+      alert('当前画板内容为空（没有便签、文本或手绘笔迹），暂无可导出的内容。');
+      return;
+    }
+    const fileName = downloadSnapshot(board);
+    console.log(`[Snapshot] Exported board "${board.name}" to ${fileName}`);
   };
 
   if (currentView === 'dashboard') {
@@ -121,6 +136,36 @@ const App: React.FC = () => {
         }}>
           {activeBoard?.name}
         </div>
+        <button
+          onClick={handleExportSnapshot}
+          title="将当前画板（便签、文本、笔迹及图层设置）打包下载为快照文件"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            fontSize: '13px',
+            fontWeight: 500,
+            color: '#667eea',
+            background: '#eef2ff',
+            border: '1px solid #c7d2fe',
+            borderRadius: '6px',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#e0e7ff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#eef2ff';
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          导出快照
+        </button>
       </div>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Toolbar />
