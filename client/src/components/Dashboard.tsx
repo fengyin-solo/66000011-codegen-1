@@ -3,6 +3,7 @@ import { Board } from '../types';
 import { boardApi, templateApi } from '../services/api';
 import { useWhiteboardStore } from '../store/whiteboard';
 import { TemplateCenter } from './TemplateCenter';
+import { ImportSnapshotDialog } from './ImportSnapshotDialog';
 
 interface DashboardProps {
   onBoardSelect: (board: Board) => void;
@@ -133,6 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardSelect }) => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTemplateCenterOpen, setIsTemplateCenterOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const username = useWhiteboardStore((state) => state.username);
 
   const userId = 'user-1';
@@ -171,6 +173,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardSelect }) => {
       console.error('Failed to create board:', error);
       alert('创建白板失败，请重试');
     }
+  };
+
+  // 快照导入成功：刷新列表并直接进入新建的画板
+  const handleSnapshotImported = async (newBoard: Board) => {
+    await loadBoards();
+    onBoardSelect(newBoard);
   };
 
   const myBoards = boards.filter((b) => b.ownerId === userId);
@@ -357,6 +365,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardSelect }) => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
+              onClick={() => setIsImportDialogOpen(true)}
+              title="从白板快照文件创建新画板"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#4b5563',
+                background: '#fff',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f9fafb';
+                e.currentTarget.style.borderColor = '#9ca3af';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#fff';
+                e.currentTarget.style.borderColor = '#d1d5db';
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              导入快照
+            </button>
+            <button
               onClick={() => setIsTemplateCenterOpen(true)}
               style={{
                 display: 'flex',
@@ -451,6 +492,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardSelect }) => {
               </svg>
               新建白板
             </button>
+            <button
+              onClick={() => setIsImportDialogOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#fff',
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              导入快照
+            </button>
           </div>
         </div>
 
@@ -474,6 +544,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardSelect }) => {
         isOpen={isTemplateCenterOpen}
         onClose={() => setIsTemplateCenterOpen(false)}
         onCreate={handleCreateBoard}
+      />
+
+      <ImportSnapshotDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImported={handleSnapshotImported}
+        ownerId={userId}
       />
     </div>
   );

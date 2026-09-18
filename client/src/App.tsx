@@ -6,18 +6,20 @@ import { CursorOverlay } from './components/CursorOverlay';
 import { Dashboard } from './components/Dashboard';
 import { useWhiteboardStore } from './store/whiteboard';
 import { socketService } from './services/socket';
+import { downloadBoardSnapshot } from './services/snapshot';
 import { Board, BoardElement, CursorPosition, Layer, CanvasTransform, ViewType } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const {
-    setBoard, updateCursor, removeCursor, setCursors, username
+    setBoard, updateCursor, removeCursor, setCursors, setActiveLayerIndex, username
   } = useWhiteboardStore();
 
   useEffect(() => {
     if (currentView === 'board' && activeBoard) {
       setBoard(activeBoard);
+      setActiveLayerIndex(0);
 
       socketService.connect();
       socketService.joinBoard(activeBoard._id, username);
@@ -71,6 +73,14 @@ const App: React.FC = () => {
     setActiveBoard(null);
   };
 
+  // 下载当前画板快照（使用 store 中包含实时编辑结果的最新画板数据）
+  const handleDownloadSnapshot = () => {
+    const currentBoard = useWhiteboardStore.getState().board;
+    if (currentBoard) {
+      downloadBoardSnapshot(currentBoard);
+    }
+  };
+
   if (currentView === 'dashboard') {
     return <Dashboard onBoardSelect={handleBoardSelect} />;
   }
@@ -121,6 +131,37 @@ const App: React.FC = () => {
         }}>
           {activeBoard?.name}
         </div>
+        <button
+          onClick={handleDownloadSnapshot}
+          title="将当前画板（便签、文本、手绘笔迹及图层）打包下载为快照文件"
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            fontSize: '13px',
+            fontWeight: 500,
+            color: '#fff',
+            background: '#667eea',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#5a67d8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#667eea';
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          下载快照
+        </button>
       </div>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Toolbar />
