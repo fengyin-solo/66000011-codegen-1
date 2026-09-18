@@ -1,0 +1,16 @@
+# Runtime dependencies copied into task workspaces
+node_modules/
+.venv/
+venv/
+env/
+__pypackages__/
+.tox/
+.nox/
+vendor/bundle/
+
+# Local runtime and tooling output
+.DS_Store
+.vite/
+dist/
+target/
+.gradle/
